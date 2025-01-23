@@ -31,6 +31,8 @@ def plot_contour_at_coverage_2D(axis, x_value, conformalizer, method_name, alpha
     contour = ax2D.contour(Y1, Y2, mask, levels=[0], colors=color)
     plt.close(fig2D)
     
+    if hasattr(contour, 'collections'):
+        contour_paths = contour.collections[0].get_paths()
     contour_paths = contour.get_paths()
     if len(contour_paths) > 0:
         contour_path = contour_paths[0]

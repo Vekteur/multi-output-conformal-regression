@@ -72,8 +72,8 @@ sudo apt install r-base
 ### Steps
 1. Clone the repository:
 ```bash
-git clone https://github.com/Vekteur/multi-output-conformal.git
-cd multi-output-conformal
+git clone https://github.com/Vekteur/multi-output-conformal-regression.git
+cd multi-output-conformal-regression
 ```
 
 2. (Optional) Create and activate a Python virtual environment:
