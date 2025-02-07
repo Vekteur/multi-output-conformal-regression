@@ -35,7 +35,7 @@ def get_lightning_trainer(rc):
         mode='min',
         save_top_k=1,  # save k best models (determined by above metric)
         save_last=False,  # save model from last epoch
-        verbose=True,
+        verbose=False,
         dirpath=str(rc.checkpoints_path),
         filename='epoch_{epoch:04d}',
         auto_insert_metric_name=False,

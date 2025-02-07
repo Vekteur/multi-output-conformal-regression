@@ -201,11 +201,11 @@ def show_contours_on_map(conformalizer_name, x_test, y_test, contour_paths, img_
 
     # Write the region size
     folium.map.Marker(
-        [40.618713, -74.164311],
+        [40.638713, -74.164311],
         icon=folium.features.DivIcon(
-            icon_size=(160, 30),
+            icon_size=(320, 80),
             icon_anchor=(0, 0),
-            html=f'<div style="display: flex; align-items: center; justify-content: center; font-size: 20pt; color: black; background-color: white; padding: 5px 10px; border-radius: 10px">Size: {round(region_size, 2)}</div>',
+            html=f'<div style="display: flex; align-items: center; justify-content: center; font-size: 40pt; color: black; background-color: white; padding: 5px 10px; border-radius: 10px">Size: {round(region_size, 2)}</div>',
         ),
     ).add_to(map_1)
 

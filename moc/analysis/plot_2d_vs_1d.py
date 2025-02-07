@@ -31,7 +31,8 @@ def plot_2D_contour_vs_1D_at_coverage(axis, x_value, conformalizer, alpha, ylim,
     
     if hasattr(contour, 'collections'):
         contour_paths = contour.collections[0].get_paths()
-    contour_paths = contour.get_paths()
+    else:
+        contour_paths = contour.get_paths()
     if len(contour_paths) > 0:
         contour_path = contour_paths[0]
         for contour_points in contour_path.to_polygons():
@@ -49,7 +50,7 @@ def plot_2D_region_vs_1D_on_axis(ax, hparams, datamodule, model, x_test, cache_c
     hparams = hparams.copy()
     method = hparams.pop('posthoc_method')
 
-    levels = [0.2, 0.4, 0.8]
+    levels = [0.2, 0.5, 0.9]
     colors = ('black', 'tab:green', '#FFD700')
     conformalizer = conformalizers[method](data, model, **hparams, cache_calib=cache_calib)
     if cache_test is None:
@@ -57,21 +58,21 @@ def plot_2D_region_vs_1D_on_axis(ax, hparams, datamodule, model, x_test, cache_c
     for x_value, cache in zip(x_test, cache_test):
         for level, c in zip(levels, colors):
             plot_2D_contour_vs_1D_at_coverage(ax, x_value, conformalizer, 1 - level, color=c, cache=cache, **kwargs)
-    ax.view_init(elev=18, azim=-25)
 
 
 def scatter_2D_vs_1D(ax, x, y):
-    ax.scatter(x[:, 0], y[:, 0], y[:, 1], alpha=0.4)
+    ax.scatter(x[:, 0], y[:, 0], y[:, 1], color='gray', edgecolors='none', alpha=0.1)
 
 
-def plot_2D_region_vs_1D_per_method(hparams_list, datamodule, config, oracle_model=None, mqf2_model=None, path=None, grid_side=50, nrows=1):
+def plot_2D_region_vs_1D_per_method(hparams_list, datamodule, config, oracle_model=None, mqf2_model=None, path=None, grid_side=50, ncols=5):
     assert oracle_model is not None or mqf2_model is not None
     device = oracle_model.device if oracle_model is not None else mqf2_model.device
 
     size = len(hparams_list)
     if oracle_model is not None:
         size += 1
-    ncols = np.ceil(size / nrows).astype(int)
+    nrows = np.ceil(size / ncols).astype(int)
+    ncols = min(size, ncols)
     fig, ax = plt.subplots(nrows, ncols, figsize=(3.1 * ncols, 2.7 * nrows), subplot_kw={'projection': '3d'}, squeeze=False)
     ax = ax.flatten()
     for i in range(size, len(ax)):
@@ -79,13 +80,18 @@ def plot_2D_region_vs_1D_per_method(hparams_list, datamodule, config, oracle_mod
 
     # Plot the calibration data and deduce the limits of the plot
     x, y = datamodule.data_calib[:]
-    xlim = x[:, 0].min(), x[:, 0].max()
-    ylim = y[:, 0].min(), y[:, 0].max()
-    zlim = y[:, 1].min(), y[:, 1].max()
+    def get_lim(x):
+        lim = x.min(), x.max()
+        diff = lim[1] - lim[0]
+        lim = lim[0] - 0.05 * diff, lim[1] + 0.05 * diff
+        return lim
+    xlim = get_lim(x[:, 0])
+    ylim = get_lim(y[:, 0])
+    zlim = get_lim(y[:, 1])
 
     # Create the x values for which we want to plot the regions
     eps = 1e-3
-    x_test = torch.linspace(x.min() + eps, x.max() - eps, 10)
+    x_test = torch.linspace(x.min() + eps, x.max() - eps, 5)
     #x_test = torch.tensor([(x.min() + x.max()) / 2])
     x_test = x_test.to(device)
     x_test = x_test[:, None]
@@ -135,20 +141,22 @@ def plot_2D_region_vs_1D_per_method(hparams_list, datamodule, config, oracle_mod
     
     for i, axis in enumerate(ax):
         axis.set(xlim=xlim, ylim=ylim, zlim=zlim)
-        axis.set_xlabel('$X$', labelpad=-1)
-        axis.set_ylabel('$Y_1$', labelpad=-1)
-        axis.set_zlabel('$Y_2$', labelpad=-4)
-        axis.xaxis.set_tick_params(pad=0)
-        axis.yaxis.set_tick_params(pad=0)
-        axis.zaxis.set_tick_params(pad=0)
-    fig.text(0.93, 0.5, ' ', transform=fig.transFigure)
-    fig.subplots_adjust(hspace=0.05, wspace=0.2)
+        axis.set_xlabel('$X$', labelpad=-5)
+        axis.set_ylabel('$Y_1$', labelpad=-5)
+        axis.set_zlabel('$Y_2$', labelpad=-8)
+        axis.xaxis.set_tick_params(pad=-4)
+        axis.yaxis.set_tick_params(pad=-4)
+        axis.zaxis.set_tick_params(pad=-2)
+        axis.view_init(elev=18, azim=-45)
+        axis.grid(False)
+    fig.text(0.91, 0.5, ' ', transform=fig.transFigure)
+    fig.subplots_adjust(hspace=0, wspace=0.1)
     if path is not None:
         savefig(path)
 
 
 def plot_2D_region_vs_1D_per_model(datamodule, config, oracle_model, trained_models, path=None, grid_side=50):
-    method = 'HDR-CP'
+    method = 'C-HDR'
     fig, ax = plt.subplots(1, len(trained_models) + 1, figsize=(20, 5), subplot_kw={'projection': '3d'})
 
     # Deduce the limits of the plot
@@ -197,8 +205,8 @@ def plot_2D_region_vs_1D_per_model(datamodule, config, oracle_model, trained_mod
         savefig(path)
 
 
-def plot_2D_region_vs_1D_for_HDR_CP_per_n_samples(datamodule, config, model, path=None, grid_side=50):
-    method = 'HDR-CP'
+def plot_2D_region_vs_1D_for_C_HDR_per_n_samples(datamodule, config, model, path=None, grid_side=50):
+    method = 'C-HDR'
     sample_sizes = [5, 10, 30, 100, 300]
     fig, ax = plt.subplots(1, len(sample_sizes), figsize=(20, 5), subplot_kw={'projection': '3d'})
 

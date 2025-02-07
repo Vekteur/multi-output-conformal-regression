@@ -35,7 +35,7 @@ class MQF2Module(torch.nn.Module):
         self,
         input_dim: int,
         output_dim: int,
-        icnn_hidden_size: int = 20,
+        icnn_hidden_size: int = 30,
         icnn_num_layers: int = 2,
         threshold_input: float = 100,
         is_energy_score: bool = False,

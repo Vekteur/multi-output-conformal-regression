@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import seaborn as sns
 
 from moc.conformal.conformalizers_manager import conformalizers
 from moc.utils.general import savefig
@@ -25,15 +26,16 @@ def plot_contour_at_coverage_2D(axis, x_value, conformalizer, method_name, alpha
     Y1, Y2, mask = Y1.cpu().numpy(), Y2.cpu().numpy(), mask.float().cpu().numpy()
     assert Y1.shape == Y2.shape == mask.shape
 
-    axis.contourf(Y1, Y2, np.logical_not(mask), levels=[0, 0.0001], colors=color, alpha=0.1)
+    axis.contourf(Y1, Y2, np.logical_not(mask), levels=[0, 0.0001], colors=[color], alpha=0)
 
     fig2D, ax2D = plt.subplots()
-    contour = ax2D.contour(Y1, Y2, mask, levels=[0], colors=color)
+    contour = ax2D.contour(Y1, Y2, mask, levels=[0], colors=[color])
     plt.close(fig2D)
     
     if hasattr(contour, 'collections'):
         contour_paths = contour.collections[0].get_paths()
-    contour_paths = contour.get_paths()
+    else:
+        contour_paths = contour.get_paths()
     if len(contour_paths) > 0:
         contour_path = contour_paths[0]
         for i, contour_points in enumerate(contour_path.to_polygons()):
@@ -58,13 +60,28 @@ def plot_2D_region(ax, tau, method_name, hparams, datamodule, model, x_test, col
 
 
 def plot_2D_region_per_method(ax, x_value, tau, datamodule, oracle_model, mqf2_model, grid_side=50, custom_xlim=None, custom_ylim=None):
-    methods = ['M-CP', 'DR-CP', 'HDR-CP', 'HD-PCP', 'L-CP']
-    device = mqf2_model.device
+    methods = ['PCP', 'C-PCP', 'DR-CP', 'C-HDR', 'M-CP', 'L-CP']
+    palette = sns.color_palette('Paired')
+    style_dict = {
+        'Oracle': ('black', '-'),
+        'M-CP': (palette[5], '-'),
+        'L-CP': ('tab:orange', '-'),
+        'DR-CP': (palette[1], '-'),
+        'C-HDR': (palette[3], '-'),
+        'PCP': (palette[0], '--'),
+        'C-PCP': (palette[2], '--'),
+    }
     
+    device = mqf2_model.device
+
     # Deduce the limits of the plot
-    _, y = datamodule.data_calib[:]
-    ylim = y[:, 0].min(), y[:, 0].max()
-    zlim = y[:, 1].min(), y[:, 1].max()
+    _, y = datamodule.data_train[:]
+    xlim = y[:, 0].min(), y[:, 0].max()
+    ylim = y[:, 1].min(), y[:, 1].max()
+
+    x_train, y_train = datamodule.data_train[:]
+    y_near = y_train[(x_train[:, 0] > x_value - 0.02) & (x_train[:, 0] < x_value + 0.02)]
+    ax.scatter(y_near[:, 0], y_near[:, 1], color='gray', edgecolors='none', s=10, alpha=0.6)
 
     # Create the x value for which we want to plot the regions
     x_test = torch.as_tensor([[x_value]], dtype=torch.float32).to(device)
@@ -76,23 +93,24 @@ def plot_2D_region_per_method(ax, x_value, tau, datamodule, oracle_model, mqf2_m
     test_dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
     cache_test = Cache(mqf2_model, test_dataloader, n_samples=100, add_second_sample=True)
 
-    colors = ['tab:blue', 'tab:gray', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown']
-    assert len(colors) >= len(methods) + 1
-
-    plot_2D_region(
-        ax,
-        tau,
-        'Oracle',
-        {'method': 'HDR-H', 'n_samples': 500}, 
-        datamodule, 
-        oracle_model, 
-        x_test,
-        ylim=ylim, 
-        zlim=zlim, 
-        grid_side=grid_side,
-        color=colors[0]
-    )
+    if oracle_model is not None:
+        color, linestyle = style_dict['Oracle']
+        plot_2D_region(
+            ax,
+            tau,
+            'Oracle',
+            {'method': 'HDR-H', 'n_samples': 500}, 
+            datamodule, 
+            oracle_model, 
+            x_test,
+            ylim=xlim, 
+            zlim=ylim, 
+            grid_side=grid_side,
+            color=color,
+            linestyle=linestyle
+        )
     for i, method in enumerate(methods):
+        color, linestyle = style_dict[method]
         plot_2D_region(
             ax,
             tau,
@@ -101,19 +119,20 @@ def plot_2D_region_per_method(ax, x_value, tau, datamodule, oracle_model, mqf2_m
             datamodule, 
             mqf2_model, 
             x_test, 
-            ylim=ylim, 
-            zlim=zlim, 
+            ylim=xlim, 
+            zlim=ylim, 
             grid_side=grid_side, 
             cache_calib=cache_calib, 
             cache_test=cache_test,
-            color=colors[i + 1]
+            color=color,
+            linestyle=linestyle
         )
 
         if x_value == 0 and tau == 0.2:
-            ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3), ncol=6)
+            ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3), ncol=6, frameon=False)
     
     if custom_xlim is None and custom_ylim is None:
-        ax.set(xlim=ylim, ylim=zlim)
+        ax.set(xlim=xlim, ylim=ylim)
     else:
         ax.set(xlim=custom_xlim, ylim=custom_ylim)
     ax.set(xlabel='$Y_1$', ylabel='$Y_2$')

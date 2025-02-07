@@ -47,7 +47,7 @@ class GlowDistribution(torch.distributions.Distribution):
 
 
 class GlowPreTrained(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, input_dim, output_dim):
         super().__init__()
         self.input_shape = (1,)
         self.output_shape = (3, 32, 32)

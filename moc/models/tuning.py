@@ -14,13 +14,15 @@ def get_default_tuning(config):
     default_methods = [
         'M-CP',
         'DR-CP',
-        'HDR-CP', 
+        'C-HDR', 
         'HDR-H', 
         'PCP',
         'HD-PCP',
         'C-PCP',
+        'CopulaCPTS',
     ]
     mqf2_methods = default_methods + [
+        'STDQR',
         'L-CP',
         'L-H',
     ]
@@ -63,13 +65,15 @@ def get_tuning_glow(config):
     methods = [
         'M-CP',
         'DR-CP',
-        'HDR-CP', 
+        'C-HDR', 
         'HDR-H', 
         'PCP',
         'HD-PCP',
         'C-PCP',
+        'STDQR',
         'L-CP',
         'L-H',
+        'CopulaCPTS',
     ]
 
     posthoc_grid = Join(
@@ -87,25 +91,16 @@ def get_tuning_glow(config):
 def get_hparams_tuning(config):
     posthoc_grid_mqf2 = Union(
         Join(HP(method='M-CP'), HP(correction_factor=[0, 0.2, 0.4, 0.6, 0.8, 1])),
-        Join(HP(method='HDR-CP'), HP(n_samples=[5, 10, 30, 100, 300])),
+        Join(HP(method='C-HDR'), HP(n_samples=[5, 10, 30, 100, 300])),
         Join(HP(method='PCP'), HP(n_samples=[5, 10, 30, 100, 300])),
         Join(HP(method='HD-PCP'), HP(n_samples=[5, 10, 30, 100, 300])),
-        Join(HP(method='C-PCP'), Union(
-            Join(HP(n_samples_mc=5), HP(n_samples_ref=5)),
-            Join(HP(n_samples_mc=10), HP(n_samples_ref=10)),
-            Join(HP(n_samples_mc=30), HP(n_samples_ref=30)),
-            Join(HP(n_samples_mc=100), HP(n_samples_ref=100)),
-            Join(HP(n_samples_mc=300), HP(n_samples_ref=300)),
-        )),
-        # Join(
-        #     HP(method='C-PCP'), 
-        #     Union(
-        #         Join(HP(n_samples_mc=[5, 10, 30, 300]), HP(n_samples_ref=[100])), 
-        #         Join(HP(n_samples_mc=[100]), HP(n_samples_ref=[5, 10, 30, 300]))
-        #     )
-        # ),
-        HP(method='DR-CP'),
-        HP(method='L-CP'),
+        Join(
+            HP(method='C-PCP'), 
+            Union(
+                Join(HP(n_samples_mc=[5, 10, 30, 100, 300]), HP(n_samples_ref=[100])), 
+                Join(HP(n_samples_mc=[100]), HP(n_samples_ref=[5, 10, 30, 300]))
+            )
+        ),
     )
 
     mqf2 = Join(
@@ -122,7 +117,7 @@ def get_larger_mqf2_tuning(config):
     default_methods = [
         'M-CP',
         'DR-CP',
-        'HDR-CP', 
+        'C-HDR', 
         'HDR-H', 
         'PCP',
         'HD-PCP',
@@ -189,3 +184,4 @@ def get_tuning(config):
     dup = duplicates(tuning)
     assert len(dup) == 0, dup
     return tuning
+

@@ -114,11 +114,12 @@ def get_metric_df(config, df):
 
     other_columns = [col for col in df.columns if col not in metrics]
     df = df.set_index(other_columns)
-    df = df.stack(dropna=False).rename_axis(index={None: 'metric'}).to_frame(name='value')
+    df = df.stack(future_stack=True).rename_axis(index={None: 'metric'}).to_frame(name='value')
     names = df.index.names
     df = df.reset_index()
     df['metric'] = pd.Categorical(df['metric'], metrics)
-    df['posthoc_method'] = pd.Categorical(df['posthoc_method'], conformalizers.keys())
+    df['posthoc_method'] = df['posthoc_method'].replace('HDR-CP', 'C-HDR')
+    df['posthoc_method'] = pd.Categorical(df['posthoc_method'], list(conformalizers.keys()))
     df.loc[df['metric'].isin(['cond_cov_x_error', 'cond_cov_z_error']), 'value'] *= 100
     df.loc[df['model'] == 'Mixture', 'model'] = df['model'] + '-' + df['mixture_size'].astype(pd.Int32Dtype()).astype(str)
     
@@ -326,3 +327,8 @@ def to_latex(styler, path=None, hrules=True, multicol_align='c', multirow_align=
     return latex_style(styler).to_latex(
         path, hrules=hrules, multicol_align=multicol_align, multirow_align=multirow_align, convert_css=convert_css, **kwargs
     )
+
+
+def update_name(df, config, **kwargs):
+    model_name_partial = partial(create_name_from_dict, config=config, **kwargs)
+    df['name'] = df.apply(model_name_partial, axis='columns').astype('string')

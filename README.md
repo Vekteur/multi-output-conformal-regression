@@ -7,9 +7,8 @@ It includes:
 - A large empirical study based on datasets gathered from the literature, all with multiple outputs.
 
 <p align="center">
-<img src="images/unimodal_heteroscedastic.png?raw=true" alt="" width="95%" align="top">
+<img src="images/MQF2_one_moon_heteroscedastic.png?raw=true" alt="" width="95%" align="top">
 <img src="images/taxi_example.png?raw=true" alt="" width="95%" align="top">
-<img src="images/bimodal_heteroscedastic.png?raw=true" alt="" width="95%" align="top">
 </p>
 
 ## Datasets

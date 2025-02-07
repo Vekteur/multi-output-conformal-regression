@@ -132,17 +132,11 @@ class Runner:
             priority=priority,
         )
 
-    def grid_search(self, rc, priority):
+    def run_grid_search(self, rc, priority):
         grid = get_tuning(rc.config)
         for hparams in grid:
             future_rc = self.train_in_parallel(rc, hparams, priority)
             self.tasks.append(future_rc)
-
-    def run_repeated(self, rc, priority):
-        for run_id in range(self.config.start_repeat_tuning, self.config.repeat_tuning):
-            new_rc = copy(rc)
-            new_rc.run_id = run_id
-            self.grid_search(new_rc, priority)
 
     def close(self):
         if self.manager == 'dask':
@@ -189,13 +183,17 @@ def run_all(config: DictConfig, manager='sequential'):
 
     runner = Runner(config, manager=manager)
     priority = 0
-    for dataset_group, datasets in get_dataset_groups(config.datasets).items():
-        for dataset in datasets:
-            rc = RunConfig(
-                config=config,
-                dataset_group=dataset_group,
-                dataset=dataset,
-            )
-            runner.run_repeated(rc, priority)
-            priority -= 1
+    for run_id in range(config.start_repeat_tuning, config.repeat_tuning):
+        for dataset_group, datasets in get_dataset_groups(config.datasets).items():
+            # log.info(f"Dataset group: \033[1;4m{dataset_group}\033[0m")
+            for dataset in datasets:
+                # log.info(f"  Dataset: \033[4m{dataset}\033[0m")
+                rc = RunConfig(
+                    config=config,
+                    dataset_group=dataset_group,
+                    dataset=dataset,
+                    run_id=run_id,
+                )
+                runner.run_grid_search(rc, priority)
+                priority -= 1
     runner.close()

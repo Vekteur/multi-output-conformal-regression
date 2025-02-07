@@ -23,6 +23,7 @@ def train(rc, datamodule):
     model_kwargs['output_dim'] = datamodule.output_dim
     if model_cls.output_type() == 'quantile':
         model_kwargs['alpha'] = torch.tensor([rc.config.alpha / 2, 1 - rc.config.alpha / 2])
+        model_path = rc.checkpoints_path / f'best_{rc.config.alpha}.pth'
     model = model_cls(**model_kwargs)
     
     trainer_cls = trainers[model_name]

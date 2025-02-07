@@ -188,7 +188,7 @@ class UnimodalHeteroscedastic(DatasetGenerator):
 class BimodalHeteroscedastic(DatasetGenerator):
     def __init__(self, scale_power=1.):
         self.scale_power = scale_power
-        self.default_size = 5000
+        self.default_size = 10000
     
     def dist_x(self):
         return Independent(Uniform(torch.tensor([0.5]), torch.tensor([2.])), 1)
@@ -219,6 +219,32 @@ class Bimodal(BimodalHeteroscedastic):
         return Independent(Categorical(torch.tensor([[1]])), 1)
 
 
+class OneMoonHeteroskedastic(DatasetGenerator):
+    def __init__(self, k=100, noise=0.2):
+        self.k = k
+        self.noise = noise
+        self.default_size = 10000
+
+    def dist_x(self):
+        return Independent(Uniform(torch.tensor([0.]), torch.tensor([1.])), 1)
+
+    def dist_y(self, x):
+        batch_size = x.shape[0]
+        x = x[:, 0]
+
+        alpha = torch.linspace(0, torch.pi, self.k, device=x.device)
+        locs = torch.stack([alpha.cos(), alpha.sin()], dim=-1)
+        locs -= torch.tensor([0., 0.5])
+        locs[:, 1] *= -1
+        locs = locs[None, :, :] * (1.3 - x[:, None, None])
+        scale = torch.full((self.k, 2), self.noise, device=x.device)
+        scale = scale.tile(batch_size, 1, 1)
+        comp_dist = Independent(Normal(locs, scale), 1)
+        cat_dist = Categorical(probs=torch.ones(batch_size, self.k, device=x.device))
+        dist = MixtureSameFamily(cat_dist, comp_dist)
+        return dist
+
+
 def get_distribution_generator(name):
     if name == 'unimodal_heteroscedastic':
         return UnimodalHeteroscedastic()
@@ -244,6 +270,8 @@ def get_distribution_generator(name):
     elif name.startswith('mvn_dependent_'):
         d = int(name.split('_')[-1])
         return MVNDependent(d)
+    elif name == 'one_moon_heteroscedastic':
+        return OneMoonHeteroskedastic()
     return None
 
 
@@ -270,4 +298,6 @@ class ToyDataModule(BaseDataModule):
             x, y = generate_data_modified(500)
         elif self.dataset == 'toy_del_barrio':
             x, y = generate_eq_4_1_del_barrio(10000)
+        else:
+            raise ValueError(f'Unknown dataset: {self.dataset}')
         return x, y

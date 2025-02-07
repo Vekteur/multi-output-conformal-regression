@@ -88,7 +88,7 @@ toy_ndim_datasets = [
     'mvn_mixture_3_10',
     'mvn_mixture_10_10',
     'mvn_mixture_30_10',
-    #'mvn_mixture_100_10',
+    'mvn_mixture_100_10',
     'mvn_dependent_1',
     'mvn_dependent_3',
     'mvn_dependent_10',
@@ -110,18 +110,21 @@ toy_dataset_groups = {
     'toy_ndim': toy_ndim_datasets,
 }
 
-subset_datasets = {
-    'mulan': ['slump', 'sf1', 'jura', 'enb', 'scpf', 'scm20d', 'scm1d'],
-    'cevid': ['births1'],
-    'feldman': ['meps_19', 'bio'],
+filtered_datasets = {
+    'camehl': ['households'],
+    'del_barrio': ['calcofi'],
+    'feldman': feldman_datasets,
+    'mulan': ['scm20d', 'rf1', 'rf2', 'scm1d'],
     'wang': ['taxi'],
 }
 
 def get_dataset_groups(key):
     if key == 'default':
-        key = 'real'
+        key = 'filtered'
     if key == 'all':
         return real_dataset_groups | toy_dataset_groups
+    elif key == 'filtered':
+        return filtered_datasets
     elif key == 'real':
         return real_dataset_groups
     elif key == 'toy':
@@ -136,8 +139,6 @@ def get_dataset_groups(key):
         return {
             'cifar10': ['cifar10']
         }
-    elif key == 'subset':
-        return subset_datasets
     elif key == 'test':
         return {
             'mulan': ['sf1']

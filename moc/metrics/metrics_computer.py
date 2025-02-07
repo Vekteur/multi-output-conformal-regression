@@ -164,5 +164,5 @@ class MetricsComputer:
         metrics, test_coverage_time = self.compute_all_metrics(conformalizer)
         metrics['test_coverage_time'] = test_coverage_time
         metrics['test_coverage_time'] += self.cache_test.get_time(conformalizer.used_cache_keys())
-        metrics['q'] = conformalizer.get_q(self.alpha).cpu().item()
+        metrics['q'] = conformalizer.get_q(self.alpha).detach().cpu().numpy()
         return metrics
